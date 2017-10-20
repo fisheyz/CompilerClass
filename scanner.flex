@@ -1,7 +1,6 @@
 %{
 // HEADERS
 #include <stdlib.h>
-#include "common.h"
 #include "parser.h"
 
 // variables maintained by the lexical analyser
@@ -11,12 +10,15 @@ int yyline = 1;
 %option noyywrap
 
 %%
-[ \t] {  }
+[ \t]+ {  }
+#.*\n { yyline++; }
 \n { yyline++; }
-"+" { return ADD_TOKEN; }
-\-?[0-9][0-9]*(\.[0-9]*)? { 
-   return NUMBER_TOKEN; 
+
+\-?[0-9]+ { 
+   yylval.intValue = atoi(yytext);
+   return INT; 
 }
+"+" { return PLUS; }
 .  { yyerror("unexpected character"); }
 %%
 

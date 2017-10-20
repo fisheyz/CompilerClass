@@ -1,27 +1,53 @@
-%start prog;
-%token NUMBER_TOKEN  // Numbers
-%token ADD_TOKEN // +
-%token MULT_TOKEN // *
-%left ADD_TOKEN
+// Tokens
+%token 
+  INT  
+  PLUS
 
-%{
-#include <stdio.h>
-#include "common.h"
-%}
+// Operator associativity & precedence
+%left PLUS
 
-%%
-prog: /* empty */
-    | expr prog
+// Root-level grammar symbol
+%start program;
 
-expr: NUMBER_TOKEN
-   | expr ADD_TOKEN expr
-   ;
-%%
-#include <stdio.h>
-
-int main(int argc, char **argv)
-{
-  if (argc > 0) yyin = fopen(argv[1], "r");
-  yyparse();
-  return 0;
+// Types/values in association to grammar symbols.
+%union {
+  int intValue;
+  Expr* exprValue; 
 }
+
+%type <intValue> INT
+%type <exprValue> expr
+
+// Use "%code requires" to make declarations go
+// into both parser.c and parser.h
+%code requires {
+#include <stdio.h>
+#include <stdlib.h>
+#include "ast.h"
+
+extern int yylex();
+extern int yyline;
+extern char* yytext;
+extern FILE* yyin;
+extern void yyerror(const char* msg);
+Expr* root;
+}
+
+%%
+program: expr { root = $1; }
+
+expr: 
+  INT { 
+    $$ = ast_integer($1); 
+  }
+  | 
+  expr PLUS expr { 
+    $$ = ast_operation(PLUS, $1, $3); 
+  } 
+  ;
+%%
+
+void yyerror(const char* err) {
+  printf("Line %d: %s - '%s'\n", yyline, err, yytext  );
+}
+

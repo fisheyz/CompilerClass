@@ -1,89 +1,86 @@
 ============================================================
-Introduction to Bison.
+Abstract syntax trees (ASTs)
 ============================================================
-1. Get started!
+
+Summary: we will work on building ASTs for a language of 
+arithmetic expressions involving integers.
+
+We will start with "programs" defined by a single expression
+made of numbers and sum (+) operations.  
+
+After parsing, the AST for a program is visited/interpreted 
+to print values for expressions.
+
+============================================================
+1. Get started: 
 
 a) Check the available files:
-   - Makefile : makefile to build the parser.
+   - Makefile : makefile to build the interpreter.
    - scanner.flex : the lexical analyser (scanner) in flex
    - parser.bison: the parser in bison
-       Note: the given scanner & grammar only deal 
-             with numbers and the "+" operator.
-   - common.c, common.h : common definitions / routines
-   - ex1.txt ex2.txt ex3.txt : samples 
+   - ast.h, ast.c: AST declarations & constructor implementations
+   - interpreter.c: the interpreter routines including main
+   - example[1234].txt : example files
 
-b) Compile the parser by typing "make" in the command line.
-   The generated executable file is called "parser".
+b) Compile the interpreter by typing "make" in the command line.
+   The generated executable file is called "interpreter".
 
-c)  Execute the parser for ex1.txt ex2.txt ex3.txt
-    e.g. "parser ex1.txt". 
-    You should get errors for all of them.
-    Modify these files until the parser reports no errors. 
+c)  The interpreter recognises a single expression composed 
+of single integers or expressions making use
+of the '+' operator.  
 
-============================================================
-2. You may have noticed during compilation (step 1b) 
-that bison reports "1 shift/reduce conflict"
-(if you missed it, recompile the parser using "make clean all"). 
-The conflict comes from the ambiguity of "expr ADD_TOKEN expr"
-(why is it ambiguous?).
-
-To overcome this conflict add 
-  %left ADD_TOKEN 
-to the parser specification (on top) and re-compile.
-
-This change specifies left associativity for sum expressions
-and gets rid of the ambiguity.
+Execute it for example1.txt and example2.txt, for instance 
+type "./interpreter example1.txt". 
 
 ============================================================
+2. Handle binary operators '-', '*', '/', '%'.
+You'll need to:
 
-3. Complete the grammar to also handle the binary operators 
- -, *, and /.
+a) Modify the parser / scanner by defining / recognising 
+a new tokens for each operator, and also operator 
+associativity and precedence.
 
-Use %left as in step 2 to ensure there are no grammar conflicts.
+b) Add new rules to the grammar for 'expr'.
 
+c) Modify the 'eval' function in 'interpreter.c'.
+
+c) Test with examples that make use of the new
+operators, for instance the available 'example3.txt'.
 
 ============================================================
 
-4. Now we will use semantic actions to associate a "double" 
-value to each expression, and print these values.
+3. Modify the language such that the interpreter accepts a 
+list of expressions, rather than a single expression.
+The following steps are suggested:
 
-Proceed in the following steps:
+a) In ast.h: define the 'ExprList' datatype 
+as a single-linked list of expressions and
+declare a constructor function for expression lists:
 
-a) In parser.bison add at the top
+ExprList* ast_exprlist(Expr* expr, ExprList* next);
 
-   %define api.value.type { double } 
+b) In ast.c: implement the new constructor function.
 
-  This will set "double" as the type of expressions.
+c) In parser.bison change the grammar by:
+  -- modifying the rule for 'program' to
+     program: expr_list 
+  and define the rules for exprList
+  -- associating the 'ExprList' type to 'expr_list'
+  -- changing the type of the 'root' variable to 'ExprList'
 
-b) Modify scanner.flex to  assign the value of a number to 
-the special variable 'yylval' as part of the actions in the 
-NUMBER_TOKEN rule. You may use the C library function 'atof' 
-to convert the 'yytext' string to a number.
+d) In interpreter.c: modify the main function such that it 
+prints the evaluation of each expression in the 'root' list.
 
-c) In parser.bison encode semantic actions as follows:
-
-   NUMBER_TOKEN { $$ = $1; }
-   expr SUM_TOKEN expr { $$ = $1 + $3;}
-   ... etc ...
-
-d) Use a semantic action for 'prog' to print the value of each 
-expression read from the input
-  
-e) If the values printed are wrong look at the order of the 
-   "%left" directives for the operators. 
-   This order dictates the precedence (lowest to highest) for
-   the operators.
-
-5. Extensions (outside class):
-
-a) Allow single-line comments begginning with "#".
-
-b) Handle expressions between "(" and ")".
-
-c) Allow variables identified by "a" to "z" in expressions, and allow 
-   attributions of the form "var = expr".
-   You may assume all variables are initially 0. 
-   Suggestion: use an array to hold variable values.
+You may test your code with "example4.txt".
 
 ============================================================
+4. Relational operators (to work outside class) 
+
+Handle expressions of the type 'bexpr ? e1 : e2'
+where 'bexpr' is a boolean expression, and 'e1' and 'e2' are
+arithmetic expressions.
+
+Boolean expressions can either be 'true', 'false', 
+or 'expr <relop> expr' where <relop> is one of the 
+relational operators '==', '!=', '<', '>', <=' and '>='.
 
